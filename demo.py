@@ -6,6 +6,8 @@ from keras.layers import LSTM, Dense
 from keras.optimizers import Nadam
 from sklearn.metrics import mean_squared_error
 
+# 这个demo里，使用过去的'longitude', 'latitude', 'speed', 'course' 数据，预测'longitude', 'latitude'两个参数，“过去”的长度取决于参数n_steps，只能预测下一秒数据
+
 
 # 1. 数据预处理
 def preprocess_data(data_path):
@@ -74,13 +76,20 @@ if __name__ == "__main__":
     # 预测与评估（保持不变）
     y_pred = model.predict(X_test)
 
-    # 反归一化
-    dummy = np.zeros((len(y_pred), processed_data.shape[1]))
-    dummy[:, :2] = y_pred
-    y_pred_actual = scaler.inverse_transform(dummy)[:, :2]
 
-    dummy[:, :2] = y_test
-    y_test_actual = scaler.inverse_transform(dummy)[:, :2]
+    # 构造完整的归一化数据矩阵（包含所有特征）
+    dummy_test = np.zeros((len(y_test), processed_data.shape[1]))
+    dummy_test[:, :2] = y_test  # 填充真实的归一化经纬度标签
+    dummy_test[:, 2:] = X_test[:, -1, 2:]  # 使用输入序列最后一刻的归一化速度和航向
+
+    # 反归一化
+    y_test_actual = scaler.inverse_transform(dummy_test)[:, :2]
+
+    # 同理处理预测值
+    dummy_pred = np.zeros((len(y_pred), processed_data.shape[1]))
+    dummy_pred[:, :2] = y_pred
+    dummy_pred[:, 2:] = X_test[:, -1, 2:]  # 与预测对应的输入序列末尾特征
+    y_pred_actual = scaler.inverse_transform(dummy_pred)[:, :2]
 
     # 计算RMSE
     rmse = np.sqrt(mean_squared_error(y_test_actual, y_pred_actual))

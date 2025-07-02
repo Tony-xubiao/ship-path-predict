@@ -32,7 +32,7 @@ def build_lstm_model(input_shape):
     model.add(LSTM(100, input_shape=input_shape, return_sequences=True))
     model.add(LSTM(100))
     model.add(Dense(4))  # 输出四个特征
-    optimizer = Nadam(learning_rate=0.001)
+    optimizer = Nadam(learning_rate=0.0001)
     model.compile(optimizer=optimizer, loss='mse')
     return model
 
@@ -60,8 +60,8 @@ def iterative_predict(model, initial_seq, scaler, predict_steps=30):
 if __name__ == "__main__":
     # 参数设置
     n_steps = 50
-    batch_size = 100
-    epochs = 20
+    batch_size = 20
+    epochs = 2000
     predict_steps = 30  # 默认预测30个时间步
 
     # 数据预处理
@@ -109,8 +109,7 @@ if __name__ == "__main__":
     plt.plot(actual_coords[:, 0], actual_coords[:, 1], 'b-', label='Actual Track')
     plt.plot(predicted_coords[:, 0], predicted_coords[:, 1], 'r--',
              label=f'Predicted {predict_steps}steps')
-    # plt.scatter(initial_sequence[-1, 0], initial_sequence[-1, 1],
-    #             c='g', marker='*', s=100, label='Start Point')
+
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
     plt.title(f'Iterative Trajectory Prediction ({predict_steps} steps)')
