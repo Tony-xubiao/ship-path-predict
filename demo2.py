@@ -5,6 +5,9 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import Nadam
 from sklearn.metrics import mean_squared_error
+# 这个demo里，使用过去的'longitude', 'latitude', 'speed', 'course' 数据，
+# 预测'longitude', 'latitude' ,'speed', 'course'四个参数，“过去”的长度取决于参数n_steps，可以迭代预测无限时长
+
 
 
 # 1. 数据预处理（修改y包含四个特征）
