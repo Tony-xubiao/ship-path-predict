@@ -35,7 +35,7 @@ def build_lstm_model(input_shape):
     model.add(LSTM(100, input_shape=input_shape, return_sequences=True))
     model.add(LSTM(100))
     model.add(Dense(4))  # 输出四个特征
-    optimizer = Nadam(learning_rate=0.0001)
+    optimizer = Nadam(learning_rate=0.001)
     model.compile(optimizer=optimizer, loss='mse')
     return model
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # 参数设置
     n_steps = 50
     batch_size = 20
-    epochs = 2000
+    epochs = 50
     predict_steps = 30  # 默认预测30个时间步
 
     # 数据预处理
@@ -99,6 +99,9 @@ if __name__ == "__main__":
 
     # 迭代预测（使用测试集第一个样本作为初始序列）
     initial_sequence = X_test[0]
+    # print("length of X_train:", len(X_train))
+    # print("length of X_test:", len(X_test))
+    print("data of initial_sequence", initial_sequence)
     predicted_coords = iterative_predict(model, initial_sequence, scaler, predict_steps)
 
     # 可视化迭代预测结果
