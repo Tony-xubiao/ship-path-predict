@@ -5,9 +5,15 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import Nadam
 from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+
+# 设置中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # Windows系统
+plt.rcParams['axes.unicode_minus'] = False
+
+
 # 这个demo里，使用过去的'longitude', 'latitude', 'speed', 'course' 数据，
 # 预测'longitude', 'latitude' ,'speed', 'course'四个参数，“过去”的长度取决于参数n_steps，可以迭代预测无限时长
-
 
 
 # 1. 数据预处理（修改y包含四个特征）
@@ -29,13 +35,17 @@ def create_sequences(data, n_steps=5):
     return np.array(X), np.array(y)
 
 
-# 3. LSTM模型构建（修改输出维度为4）
+# 3. LSTM模型构建（输出维度为4）
+from keras.layers import Dropout
+from keras.regularizers import l2
+
+
 def build_lstm_model(input_shape):
     model = Sequential()
     model.add(LSTM(100, input_shape=input_shape, return_sequences=True))
     model.add(LSTM(100))
     model.add(Dense(4))  # 输出四个特征
-    optimizer = Nadam(learning_rate=0.001)
+    optimizer = Nadam(learning_rate=0.0001)
     model.compile(optimizer=optimizer, loss='mse')
     return model
 
@@ -62,9 +72,9 @@ def iterative_predict(model, initial_seq, scaler, predict_steps=30):
 # 4. 主程序（添加迭代预测功能）
 if __name__ == "__main__":
     # 参数设置
-    n_steps = 50
-    batch_size = 20
-    epochs = 50
+    n_steps = 6
+    batch_size = 100
+    epochs = 500
     predict_steps = 30  # 默认预测30个时间步
 
     # 数据预处理
@@ -105,19 +115,28 @@ if __name__ == "__main__":
     predicted_coords = iterative_predict(model, initial_sequence, scaler, predict_steps)
 
     # 可视化迭代预测结果
-    import matplotlib.pyplot as plt
-
     # 获取实际轨迹（测试集后续predict_steps个点）
     actual_steps = min(predict_steps, len(y_test))
     actual_coords = scaler.inverse_transform(y_test[:actual_steps])[:, :2]
 
+    # 最后训练完在测试集的表现
     plt.figure(figsize=(12, 6))
-    plt.plot(actual_coords[:, 0], actual_coords[:, 1], 'b-', label='Actual Track')
-    plt.plot(predicted_coords[:, 0], predicted_coords[:, 1], 'r--',
-             label=f'Predicted {predict_steps}steps')
+    plt.subplot(1, 2, 1)
+    plt.plot(y_test_actual[:, 0], y_test_actual[:, 1], 'b-', label='测试集实际')
+    plt.plot(y_pred_actual[:, 0], y_pred_actual[:, 1], 'r--',
+             label=f'测试集预测')
 
     plt.xlabel('Longitude')
     plt.ylabel('Latitude')
-    plt.title(f'Iterative Trajectory Prediction ({predict_steps} steps)')
+    plt.title(f'测试集表现')
     plt.legend()
+
+    # 验证后续30个step的表现
+    plt.subplot(1, 2, 2)
+    plt.plot(actual_coords[:, 0], actual_coords[:, 1], 'b-', label='Actual Track')
+    plt.plot(predicted_coords[:, 0], predicted_coords[:, 1], 'r--',
+             label=f'Predicted {predict_steps}steps')
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    plt.title(f'从测试集第一个点往后推理{predict_steps} steps ')
     plt.show()

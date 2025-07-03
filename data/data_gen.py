@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 # 生成模拟数据参数
 np.random.seed(42)
-total_points = 36000  # 36000秒=10小时
+total_points = 600  # 36000秒=10小时，每60s一条数据，10小时共600条
 center_lon = 128.5  # 初始经度
 center_lat = 30.0  # 初始纬度
 
@@ -21,7 +21,7 @@ t = np.linspace(0, 10 * np.pi, total_points)  # 10个波动周期
 longitudes = center_lon + np.linspace(0, 5, total_points)  # 10小时东移5度
 
 # 纬度添加正弦波动（北移基线+横向波动）
-latitudes = center_lat + 0.1 * np.sin(t) + np.linspace(0, 0.8, total_points)
+latitudes = center_lat + 0.1 * np.sin(t) + np.linspace(0, 2, total_points)
 
 # 速度生成（10±2节）
 base_speed = 10
@@ -33,9 +33,9 @@ dy = np.gradient(latitudes)
 course = np.degrees(np.arctan2(dy, dx)) % 360
 
 # 添加合理噪声
-longitudes += np.random.normal(0, 2e-5, total_points)
-latitudes += np.random.normal(0, 2e-5, total_points)
-speed = np.clip(speed, 8, 12)
+# longitudes += np.random.normal(0, 2e-5, total_points)
+# latitudes += np.random.normal(0, 2e-5, total_points)
+# speed = np.clip(speed, 8, 12)
 
 # 创建DataFrame
 df = pd.DataFrame({

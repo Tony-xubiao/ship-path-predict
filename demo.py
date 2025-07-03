@@ -5,6 +5,11 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense
 from keras.optimizers import Nadam
 from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+
+# 设置中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # Windows系统
+plt.rcParams['axes.unicode_minus'] = False
 
 # 这个demo里，使用过去的'longitude', 'latitude', 'speed', 'course' 数据，预测'longitude', 'latitude'两个参数，“过去”的长度取决于参数n_steps，只能预测下一秒数据
 
@@ -96,8 +101,6 @@ if __name__ == "__main__":
     print(f'Test RMSE: {rmse:.6f} degrees')
 
     # 可视化轨迹对比
-    import matplotlib.pyplot as plt
-
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_actual[:, 0], y_test_actual[:, 1], 'b-', label='Actual Track')
     plt.plot(y_pred_actual[:, 0], y_pred_actual[:, 1], 'r--', label='Predicted Track')
