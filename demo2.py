@@ -6,6 +6,9 @@ from keras.layers import LSTM, Dense
 from keras.optimizers import Nadam
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+from keras.layers import Dropout
+from keras.regularizers import l2
+from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler,EarlyStopping
 
 # 设置中文字体
 plt.rcParams['font.sans-serif'] = ['SimHei']  # Windows系统
@@ -35,17 +38,44 @@ def create_sequences(data, n_steps=5):
     return np.array(X), np.array(y)
 
 
+# 自适应学习率回调
+def adaptive_lr():
+    return ReduceLROnPlateau(
+        monitor='val_loss',  # 监控验证集loss
+        factor=0.5,         # 学习率衰减系数
+        patience=15,         # 连续15epoch不下降触发衰减
+        min_lr=1e-6,        # 最小学习率下限
+        verbose=1           # 显示调整信息
+    )
+
+
+def lr_schedule(epoch):
+    if epoch < 1000:
+        return 0.0001
+    else:
+        return 0.00005
+
+
 # 3. LSTM模型构建（输出维度为4）
-from keras.layers import Dropout
-from keras.regularizers import l2
-
-
 def build_lstm_model(input_shape):
     model = Sequential()
-    model.add(LSTM(100, input_shape=input_shape, return_sequences=True))
-    model.add(LSTM(100))
+    model.add(LSTM(100, input_shape=input_shape, return_sequences=False))
     model.add(Dense(4))  # 输出四个特征
     optimizer = Nadam(learning_rate=0.0001)
+    model.compile(optimizer=optimizer, loss='mse')
+    return model
+
+
+def build_lstm_model_type_B(input_shape):
+    model = Sequential()
+    model.add(LSTM(256, input_shape=input_shape, return_sequences=True,
+                   kernel_regularizer=l2(0.001)))
+    model.add(Dropout(0.2))
+    model.add(LSTM(128, kernel_regularizer=l2(0.001)))
+    model.add(Dropout(0.2))
+    model.add(Dense(64, activation='relu', kernel_regularizer=l2(0.001)))
+    model.add(Dense(4))
+    optimizer = Nadam(learning_rate=0.001)
     model.compile(optimizer=optimizer, loss='mse')
     return model
 
@@ -72,9 +102,9 @@ def iterative_predict(model, initial_seq, scaler, predict_steps=30):
 # 4. 主程序（添加迭代预测功能）
 if __name__ == "__main__":
     # 参数设置
-    n_steps = 6
-    batch_size = 100
-    epochs = 500
+    n_steps = 5
+    batch_size = 32
+    epochs = 5000
     predict_steps = 30  # 默认预测30个时间步
 
     # 数据预处理
@@ -90,11 +120,19 @@ if __name__ == "__main__":
 
     # 构建并训练模型
     model = build_lstm_model((X_train.shape[1], X_train.shape[2]))
+    callbacks = [
+        LearningRateScheduler(lr_schedule),
+        # adaptive_lr(),  # 选择任意一种学习率策略
+        # EarlyStopping(monitor='val_loss', patience=25,min_delta=0.0001,restore_best_weights=True)
+    ]
+
+
     history = model.fit(X_train, y_train,
                         epochs=epochs,
                         batch_size=batch_size,
                         validation_split=0.2,
-                        verbose=1)
+                        verbose=1,
+                        callbacks=callbacks)
 
     # 常规预测与评估
     y_pred = model.predict(X_test)
