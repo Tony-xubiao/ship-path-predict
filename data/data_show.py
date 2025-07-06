@@ -62,6 +62,7 @@ def plot_ship_trajectory(df, title='船舶航迹可视化'):
 if __name__ == "__main__":
     # 读取数据文件（请确保文件路径正确）
     data_file = "wave_ship_data.csv"
+    data_file = "G:\code\ship-path-predict\ship-path-predict\data/real_ais_data.csv"
     try:
         ship_df = read_ship_data(data_file)
         print(f"成功读取数据文件：{data_file}")
