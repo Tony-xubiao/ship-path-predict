@@ -1,4 +1,4 @@
-# train.py
+# 用过去n_steps个时间步的'longitude', 'latitude', 'speed', 'course'数据，预测将来forecast_steps个时间步的'longitude', 'latitude'数据
 import os
 import numpy as np
 import pandas as pd
@@ -8,7 +8,11 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense, Reshape
 from keras.optimizers import Nadam
 import joblib
-
+from datetime import datetime
+import matplotlib.pyplot as plt
+# 设置中文字体
+plt.rcParams['font.sans-serif'] = ['SimHei']  # Windows系统
+plt.rcParams['axes.unicode_minus'] = False
 
 def preprocess_data(data_path):
     data = pd.read_csv(data_path, parse_dates=['timestamp'])
@@ -47,11 +51,11 @@ def build_lstm_model(input_shape):
     return model
 
 
-def save_scalers(scalers, save_dir):
+def save_scalers(scalers,save_dir, time_str):
     """单独保存每个特征的scaler"""
     os.makedirs(save_dir, exist_ok=True)
     for col, scaler in scalers.items():
-        joblib.dump(scaler, f"{save_dir}/scaler_{col}.pkl")
+        joblib.dump(scaler, f"{save_dir}/scaler_{time_str}_{col}.pkl")
 
 
 def inverse_scale_coordinates(scalers, data):
@@ -100,8 +104,14 @@ if __name__ == "__main__":
               verbose=1)
 
     # 保存模型和scaler（修改保存方式）
-    model.save('checkpoint/model_60-10.h5')
-    save_scalers(scalers, 'checkpoint')  # 新增scaler保存方式
+    now = datetime.now()
+    time_str = f"{now.year}-{now.month:02d}-{now.day:02d}-{now.hour:02d}-{now.minute:02d}-{now.second:02d}"
+    print(time_str)
+
+    model_name = "./checkpoint/model_" + time_str + ".h5"
+    model.save(model_name)
+    save_dir = "checkpoint"
+    save_scalers(scalers, save_dir, time_str)  # 新增scaler保存方式
     print("训练完成，模型和scaler已保存至checkpoint目录")
 
     # ============ 新增部分：模型评估与可视化 ============
@@ -137,7 +147,7 @@ if __name__ == "__main__":
         plt.figure(figsize=(16, 6))
 
         # 子图1：轨迹对比
-        plt.subplot(1, 2, 1)
+        # plt.subplot(1, 2, 1)
         plt.plot(actual[:, 0], actual[:, 1], 'b-o', label='真实轨迹', markersize=5)
         plt.plot(predicted[:, 0], predicted[:, 1], 'r--x', label='预测轨迹', markersize=5)
         plt.xlabel('经度')
