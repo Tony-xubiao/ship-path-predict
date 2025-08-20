@@ -11,8 +11,8 @@ router = APIRouter()
 
 @router.post("/exec")
 async def predict_exec(param: PredictReq):
-    print(f'进入轨迹预测接口...')
-    model_code = param.model_code
+    model_code = str(param.model_code)
+    print(f'进入轨迹预测接口...modelCode:{model_code}')
     mmsi = param.mmsi
     steps = param.steps
 

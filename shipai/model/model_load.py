@@ -137,11 +137,13 @@ def load_joblib(remote_path):
                 logger.error(f"文件删除失败: {str(e)}")
 
 def load_model(mmsi, model_code):
-    model_path = f"{get_path(mmsi, model_code)}/model.joblib"
+    model_path = f"{get_path(mmsi, model_code)}/model.h5"
+    print(f'加载模型...{model_path}')
     return load_joblib(model_path)
 
 def load_scaler(mmsi, model_code):
     scaler_path = f"{get_path(mmsi, model_code)}/scaler.joblib"
+    print(f'加载模型scaler...{scaler_path}')
     return load_joblib(scaler_path)
 
 def train_data_path(mmsi, model_code):
