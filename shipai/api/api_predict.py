@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import paramiko
 from fastapi import APIRouter
 
@@ -10,6 +11,7 @@ router = APIRouter()
 
 @router.post("/exec")
 async def predict_exec(param: PredictReq):
+    print(f'è¿›å…¥è½¨è¿¹é¢„æµ‹æ¥å£...')
     model_code = param.model_code
     mmsi = param.mmsi
     steps = param.steps
@@ -19,8 +21,9 @@ async def predict_exec(param: PredictReq):
     ssh.connect(ml.SFTP_HOST, username=ml.SFTP_USERNAME, password=ml.SFTP_PASSWORD)
     sftp = ssh.open_sftp()
     try:
-        # ¼ÓÔØÄ£ĞÍ¡¢scaler¡¢ÑéÖ¤Êı¾İ
+        # åŠ è½½æ¨¡å‹ã€scalerã€éªŒè¯æ•°æ®
         model, scaler_lon_lat, scaler_speed, scaler_course = load_model_scaler(mmsi, model_code)
+        print(f'æ¨¡å‹ã€scalerã€éªŒè¯æ•°æ®åŠ è½½å®Œæˆ...')
         validate_data_path = ml.validate_data_path(mmsi, model_code)
         predict_result = predict_future_trajectory(
             sftp=sftp,
@@ -33,6 +36,7 @@ async def predict_exec(param: PredictReq):
             n_steps=20,
             predict_steps=steps
         )
+        print(f'é¢„æµ‹é€»è¾‘æ‰§è¡Œå®Œæˆ...')
     except Exception as e:
         print(e)
         raise
@@ -52,26 +56,26 @@ def predict_future_trajectory(
         predict_steps
 ):
     """
-    Ô¤²âÎ´À´Ö¸¶¨Ê±¼ä²½ÄÚµÄº½ĞĞ¹ì¼£
+    é¢„æµ‹æœªæ¥æŒ‡å®šæ—¶é—´æ­¥å†…çš„èˆªè¡Œè½¨è¿¹
 
-    ²ÎÊı:
-        model: ¼ÓÔØµÄÔ¤²âÄ£ĞÍ
-        scaler_lon_lat: ¾­¶ÈÎ³¶È¹éÒ»»¯Æ÷
-        scaler_speed: ËÙ¶È¹éÒ»»¯Æ÷
-        scaler_course: º½Ïò¹éÒ»»¯Æ÷
-        validate_data_path: ÑéÖ¤Êı¾İÎÄ¼şÂ·¾¶
-        input_start: ´ÓÑéÖ¤Êı¾İµÄºÎ´¦¿ªÊ¼È¡ÊäÈëĞòÁĞ
-        n_steps: ÊäÈëĞòÁĞµÄÊ±¼ä²½³¤(ĞèÓëÑµÁ·Ê±Ò»ÖÂ)
-        predict_steps: ÒªÔ¤²âµÄÎ´À´Ê±¼ä²½Êı
+    å‚æ•°:
+        model: åŠ è½½çš„é¢„æµ‹æ¨¡å‹
+        scaler_lon_lat: ç»åº¦çº¬åº¦å½’ä¸€åŒ–å™¨
+        scaler_speed: é€Ÿåº¦å½’ä¸€åŒ–å™¨
+        scaler_course: èˆªå‘å½’ä¸€åŒ–å™¨
+        validate_data_path: éªŒè¯æ•°æ®æ–‡ä»¶è·¯å¾„
+        input_start: ä»éªŒè¯æ•°æ®çš„ä½•å¤„å¼€å§‹å–è¾“å…¥åºåˆ—
+        n_steps: è¾“å…¥åºåˆ—çš„æ—¶é—´æ­¥é•¿(éœ€ä¸è®­ç»ƒæ—¶ä¸€è‡´)
+        predict_steps: è¦é¢„æµ‹çš„æœªæ¥æ—¶é—´æ­¥æ•°
 
-    ·µ»Ø:
-        dict: °üº¬ÒÔÏÂ¼üÖµ:
-            - 'input_coords': ÊäÈëĞòÁĞµÄÕæÊµ×ø±ê(ĞÎ×´[n_steps, 2])
-            - 'actual_coords': Õû¸öÑéÖ¤¼¯µÄÕæÊµ×ø±ê
-            - 'predicted_coords': Ô¤²âµÄÎ´À´¹ì¼£×ø±ê(ĞÎ×´[predict_steps, 2])
+    è¿”å›:
+        dict: åŒ…å«ä»¥ä¸‹é”®å€¼:
+            - 'input_coords': è¾“å…¥åºåˆ—çš„çœŸå®åæ ‡(å½¢çŠ¶[n_steps, 2])
+            - 'actual_coords': æ•´ä¸ªéªŒè¯é›†çš„çœŸå®åæ ‡
+            - 'predicted_coords': é¢„æµ‹çš„æœªæ¥è½¨è¿¹åæ ‡(å½¢çŠ¶[predict_steps, 2])
     """
-
-    # ´¦ÀíÊı¾İ²¢½øĞĞÔ¤²â
+    print(f'è¿›å…¥é¢„æµ‹é€»è¾‘æ‰§è¡Œ...')
+    # å¤„ç†æ•°æ®å¹¶è¿›è¡Œé¢„æµ‹
     scaled_data, raw_features = preprocess_validation_data(
         sftp,
         validate_data_path,
@@ -80,15 +84,15 @@ def predict_future_trajectory(
         scaler_course
     )
 
-    # ¼ì²éÊı¾İ³¤¶ÈÊÇ·ñ×ã¹»
+    # æ£€æŸ¥æ•°æ®é•¿åº¦æ˜¯å¦è¶³å¤Ÿ
     if len(scaled_data) < input_start + n_steps + predict_steps:
         raise ValueError(
-            f"Êı¾İ³¤¶È²»×ã¡£ĞèÒªÖÁÉÙ {input_start + n_steps + predict_steps} ¸öÊı¾İµã£¬"
-            f"µ«Ö»ÓĞ {len(scaled_data)} ¸ö¿ÉÓÃ¡£"
+            f"æ•°æ®é•¿åº¦ä¸è¶³ã€‚éœ€è¦è‡³å°‘ {input_start + n_steps + predict_steps} ä¸ªæ•°æ®ç‚¹ï¼Œ"
+            f"ä½†åªæœ‰ {len(scaled_data)} ä¸ªå¯ç”¨ã€‚"
         )
 
-    # ´´½¨ÊäÈëĞòÁĞ
+    # åˆ›å»ºè¾“å…¥åºåˆ—
     initial_sequence = scaled_data[input_start: input_start + n_steps]
 
-    # ½øĞĞµü´úÔ¤²â
+    # è¿›è¡Œè¿­ä»£é¢„æµ‹
     return iterative_predict(model, initial_sequence, scaler_lon_lat, predict_steps)

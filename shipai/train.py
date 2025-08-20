@@ -144,6 +144,7 @@ def save_model_and_scalers(sftp, mmsi, model, scalers, model_code):
 
 
 def train(sftp, mmsi, model_code):
+    print(f"进入到模型训练方法...mmsi:{mmsi}___modelCode:{model_code}")
     # 参数设置
     n_steps = 20
     batch_size = 32
@@ -157,6 +158,8 @@ def train(sftp, mmsi, model_code):
         sftp.stat(data_file_path)
     except FileNotFoundError:
         raise Exception("请提供有效的数据文件路径")
+
+    print(f'读取到数据文件{data_file_path}，开始训练模型...')
 
     # 数据预处理（获取多个Scaler）
     scaler_lon_lat, scaler_speed, scaler_course, processed_data, raw_features, smoothed_features, data_df = preprocess_data(
@@ -187,6 +190,8 @@ def train(sftp, mmsi, model_code):
               validation_split=0.2,
               verbose=1,
               callbacks=callbacks)
+
+    print(f'模型训练结束，开始保存模型和scaler...')
 
     # 保存模型和scaler
     save_model_and_scalers(sftp, mmsi, model, [scaler_lon_lat, scaler_speed, scaler_course], model_code)

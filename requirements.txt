@@ -6,3 +6,9 @@ matplotlib
 pykalman
 geopy
 scipy
+numpy
+paramiko
+joblib
+fastapi
+algorithm
+pydantic
