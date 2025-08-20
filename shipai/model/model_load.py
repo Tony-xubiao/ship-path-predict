@@ -151,4 +151,4 @@ def validate_data_path(mmsi, model_code):
     return f"{get_path(mmsi, model_code)}/validate.csv"
 
 def get_path(mmsi, model_code):
-    return f"/work/shipai/ftp/model/{mmsi}/{model_code}"
+    return f"/root/shipai/ftp/model/{mmsi}/{model_code}"
