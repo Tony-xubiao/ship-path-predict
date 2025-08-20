@@ -16,9 +16,9 @@ def load_model_scaler(mmsi, model_code):
     model = ml.load_model(mmsi, model_code)
     
     # 加载scaler
-    scaler_lon_lat = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_lon_lat.pkl")
-    scaler_speed = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_speed.pkl")
-    scaler_course = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_course.pkl")
+    scaler_lon_lat = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_lon_lat.pkl", 'scaler_lon_lat.pkl')
+    scaler_speed = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_speed.pkl", 'scaler_speed.pkl')
+    scaler_course = ml.load_joblib(f"{ml.get_path(mmsi, model_code)}/scaler_course.pkl", 'scaler_course.pkl')
 
     return model, scaler_lon_lat, scaler_speed, scaler_course
 

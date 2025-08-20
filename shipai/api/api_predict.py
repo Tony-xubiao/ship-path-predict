@@ -3,6 +3,7 @@ import paramiko
 from fastapi import APIRouter
 
 import shipai.model.model_load as ml
+import numpy as np
 
 from shipai.model.api_param import PredictReq
 from shipai.predict import preprocess_validation_data, iterative_predict, load_model_scaler
@@ -12,7 +13,7 @@ router = APIRouter()
 @router.post("/exec")
 async def predict_exec(param: PredictReq):
     model_code = str(param.model_code)
-    print(f'进入轨迹预测接口...modelCode:{model_code}')
+    print(f'going to predict...modelCode:{model_code}')
     mmsi = param.mmsi
     steps = param.steps
 
@@ -23,7 +24,7 @@ async def predict_exec(param: PredictReq):
     try:
         # 加载模型、scaler、验证数据
         model, scaler_lon_lat, scaler_speed, scaler_course = load_model_scaler(mmsi, model_code)
-        print(f'模型、scaler、验证数据加载完成...')
+        print(f'model|scaler|validate data LOADED...')
         validate_data_path = ml.validate_data_path(mmsi, model_code)
         predict_result = predict_future_trajectory(
             sftp=sftp,
@@ -36,13 +37,21 @@ async def predict_exec(param: PredictReq):
             n_steps=20,
             predict_steps=steps
         )
-        print(f'预测逻辑执行完成...')
+        if np.isnan(predict_result).any():
+            # data_arr = [[1,11], [2,22], [3,33], [4,44], [5,55], [6,66], [7,77], [8,88], [9,99], [10,110], [11,111]]
+            # return {"message": "success", "result": 0, "data": data_arr}
+            raise ValueError("预测结果包含NaN值！可能的原因："
+                             "\n1. 模型训练不充分"
+                             "\n2. 输入数据异常"
+                             "\n3. 标准化器与数据不匹配"
+                             "\n4. 梯度爆炸导致数值溢出")
+        print(f'predict logic EXECUTED...')
     except Exception as e:
         print(e)
-        raise
+        return {"message": str(e), "result": -1}
     finally:
         sftp.close()
-    return predict_result
+    return {"message": "success", "result": 0, "data": predict_result}
 
 def predict_future_trajectory(
         sftp,
@@ -74,7 +83,7 @@ def predict_future_trajectory(
             - 'actual_coords': 整个验证集的真实坐标
             - 'predicted_coords': 预测的未来轨迹坐标(形状[predict_steps, 2])
     """
-    print(f'进入预测逻辑执行...')
+    print(f'go in predict logic...')
     # 处理数据并进行预测
     scaled_data, raw_features = preprocess_validation_data(
         sftp,
@@ -87,8 +96,8 @@ def predict_future_trajectory(
     # 检查数据长度是否足够
     if len(scaled_data) < input_start + n_steps + predict_steps:
         raise ValueError(
-            f"数据长度不足。需要至少 {input_start + n_steps + predict_steps} 个数据点，"
-            f"但只有 {len(scaled_data)} 个可用。"
+            f"data length is not enough.  You need at least {input_start + n_steps + predict_steps} data points，"
+            f"but get only {len(scaled_data)} available."
         )
 
     # 创建输入序列

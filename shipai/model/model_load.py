@@ -2,6 +2,7 @@
 import socket
 from enum import Enum
 from joblib import load
+from keras.models import load_model as _load_model
 import paramiko
 import os
 import logging
@@ -10,6 +11,8 @@ from contextlib import contextmanager
 from functools import wraps
 import threading
 from datetime import datetime
+
+from tensorflow.python.keras.metrics import MeanSquaredError
 
 SFTP_HOST = '10.0.37.207'
 SFTP_PORT = 22
@@ -87,64 +90,63 @@ def log_operations(func):
     @wraps(func)
     def wrapper(*args, ** kwargs):
         start_time = datetime.now()
-        logger.info(f"操作开始: {func.__name__} | 参数: {kwargs}")
+        logger.info(f"operate start: {func.__name__} | param: {kwargs}")
         try:
             result = func(*args, ** kwargs)
             duration = (datetime.now() - start_time).total_seconds()
-            logger.info(f"操作成功 | 耗时: {duration:.2f}s")
+            logger.info(f"operate succeed | duration: {duration:.2f}s")
             return result
         except Exception as e:
-            logger.error(f"操作失败 | 错误类型: {type(e).__name__} | 详情: {str(e)}")
+            logger.error(f"operate failed | errType: {type(e).__name__} | detail: {str(e)}")
             raise
 
     return wrapper
 
 
 @log_operations
-def load_joblib(remote_path):
+def load_joblib(remote_path, tmp_name):
     """增强版模型加载方法"""
-    local_temp_path = os.path.join(os.getcwd(), 'temp.joblib')
+    local_temp_path = os.path.join(os.getcwd(), tmp_name)
+    print(f'load_joblib... {remote_path} => {local_temp_path}')
 
     try:
         with ssh_connection_pool() as ssh:
             # 创建SFTP会话（无需额外设置超时）
             sftp = ssh.open_sftp()  # 继承transport层的超时设置
-            logger.debug(f"SFTP会话建立 | 远程路径: {remote_path}")
+            logger.debug(f"SFTP session created | remote_path: {remote_path}")
 
             # 执行文件传输
             sftp.get(remote_path, local_temp_path)
-            logger.info(f"文件下载完成 | 本地路径: {local_temp_path}")
+            logger.info(f"download success | local path: {local_temp_path}")
 
             # 加载模型
-            return load(local_temp_path)
+            if remote_path.endswith(".pkl"):
+                return load(local_temp_path)
+            else:
+                return _load_model(local_temp_path, custom_objects={'mse': MeanSquaredError(), 'mean_squared_error': MeanSquaredError()})
 
     except paramiko.SFTPError as e:
-        logger.error(f"SFTP操作失败 | 错误码: {e.code} | 详情: {str(e)}")
+        logger.error(f"SFTP operate error | errorCode: {e.code} | detail: {str(e)}")
         raise
     finally:
         # 资源清理（增强容错）
-        if 'sftp' in locals():
+        if sftp in locals():
             try:
                 sftp.close()
-                logger.debug("SFTP会话已关闭")
+                logger.debug("SFTP session closed")
             except Exception as e:
-                logger.warning(f"SFTP关闭异常: {str(e)}")
+                logger.warning(f"SFTP close error: {str(e)}")
         if os.path.exists(local_temp_path):
             try:
                 os.remove(local_temp_path)
-                logger.debug("临时文件已清理")
+                logger.debug("temp file cleared.")
             except Exception as e:
-                logger.error(f"文件删除失败: {str(e)}")
+                logger.error(f"file delete error: {str(e)}")
 
 def load_model(mmsi, model_code):
     model_path = f"{get_path(mmsi, model_code)}/model.h5"
-    print(f'加载模型...{model_path}')
-    return load_joblib(model_path)
-
-def load_scaler(mmsi, model_code):
-    scaler_path = f"{get_path(mmsi, model_code)}/scaler.joblib"
-    print(f'加载模型scaler...{scaler_path}')
-    return load_joblib(scaler_path)
+    print(f'load model...{model_path}')
+    return load_joblib(model_path, 'temp.h5')
 
 def train_data_path(mmsi, model_code):
     return f"{get_path(mmsi, model_code)}/data.csv"
