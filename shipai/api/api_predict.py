@@ -46,12 +46,14 @@ async def predict_exec(param: PredictReq):
                              "\n3. 标准化器与数据不匹配"
                              "\n4. 梯度爆炸导致数值溢出")
         print(f'predict logic EXECUTED...')
+        if predict_result is not None:
+            predict_result_serializable = predict_result.tolist()
     except Exception as e:
         print(e)
         return {"message": str(e), "result": -1}
     finally:
         sftp.close()
-    return {"message": "success", "result": 0, "data": predict_result}
+    return {"message": "success", "result": 0, "data": predict_result_serializable}
 
 def predict_future_trajectory(
         sftp,
